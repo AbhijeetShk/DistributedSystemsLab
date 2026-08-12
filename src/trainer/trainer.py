@@ -6,6 +6,8 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from tqdm import tqdm
 
+from .checkpoint import save_checkpoint
+
 
 @dataclass
 class TrainMetrics:
@@ -86,4 +88,20 @@ class Trainer:
         return TrainMetrics(
             loss=total_loss / num_batches,
             learning_rate=self.optimizer.param_groups[0]["lr"],
+        )
+
+    def save_checkpoint(
+        self,
+        path: str,
+        epoch: int,
+        step: int,
+        loss: float,
+    ) -> None:
+        save_checkpoint(
+            path=path,
+            model=self.model,
+            optimizer=self.optimizer,
+            epoch=epoch,
+            step=step,
+            loss=loss,
         )

@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from models import GPTModel, TransformerConfig
-from trainer import Trainer
+from trainer import Trainer, load_checkpoint
 
 
 def create_model():
@@ -62,3 +62,60 @@ def test_train_epoch():
 
     assert torch.isfinite(torch.tensor(metrics.loss))
     assert metrics.loss > 0
+
+
+def test_checkpoint_round_trip(tmp_path):
+    torch.manual_seed(42)
+
+    model = create_model()
+
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=3e-4,
+    )
+
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+    )
+
+    input_ids = torch.randint(0, 100, (4, 16))
+    targets = torch.randint(0, 100, (4, 16))
+
+    metrics = trainer.train_step(
+        input_ids,
+        targets,
+    )
+
+    checkpoint_path = tmp_path / "checkpoint.pt"
+
+    trainer.save_checkpoint(
+        path=checkpoint_path,
+        epoch=1,
+        step=1,
+        loss=metrics.loss,
+    )
+
+    restored_model = create_model()
+
+    restored_optimizer = torch.optim.AdamW(
+        restored_model.parameters(),
+        lr=3e-4,
+    )
+
+    checkpoint = load_checkpoint(
+        checkpoint_path,
+        restored_model,
+        restored_optimizer,
+    )
+
+    assert checkpoint["epoch"] == 1
+    assert checkpoint["step"] == 1
+    assert checkpoint["loss"] == metrics.loss
+
+    for original, restored in zip(
+        model.parameters(),
+        restored_model.parameters(),
+        strict=True,
+    ):
+        assert torch.equal(original, restored)
