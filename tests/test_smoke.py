@@ -1,6 +1,6 @@
 def test_package_imports() -> None:
     import data
-    import distributed
+    import ds_distributed
     import models
     import trainer
     import utils
@@ -8,5 +8,5 @@ def test_package_imports() -> None:
     assert trainer is not None
     assert models is not None
     assert data is not None
-    assert distributed is not None
+    assert ds_distributed is not None
     assert utils is not None
