@@ -32,6 +32,7 @@ def test_invalid_attention_configuration():
     else:
         raise AssertionError("Expected invalid configuration to fail")
 
+
 def test_model_backward():
     config = TransformerConfig(
         vocab_size=100,
@@ -52,6 +53,7 @@ def test_model_backward():
     assert model.token_embedding.weight.grad is not None
     assert model.blocks[0].attention.qkv.weight.grad is not None
     assert model.blocks[0].mlp[0].weight.grad is not None
+
 
 def test_weight_tying():
     config = TransformerConfig(
