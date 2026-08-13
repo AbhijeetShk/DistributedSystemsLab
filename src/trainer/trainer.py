@@ -65,10 +65,14 @@ class Trainer:
     def train_epoch(
         self,
         dataloader,
+        epoch: int = 0,
     ) -> TrainMetrics:
         total_loss = 0.0
         num_batches = 0
+        sampler = getattr(dataloader, "sampler", None)
 
+        if hasattr(sampler, "set_epoch"):
+            sampler.set_epoch(epoch)
         progress = tqdm(dataloader, desc="Training")
 
         for input_ids, targets in progress:
