@@ -1,4 +1,5 @@
 from .fsdp import wrap_model_fsdp
+from .fsdp_checkpoint import save_fsdp_checkpoint
 from .runtime import (
     DistributedContext,
     cleanup_distributed,
@@ -12,4 +13,5 @@ __all__ = [
     "get_distributed_context",
     "initialize_distributed",
     "wrap_model_fsdp",
+    "save_fsdp_checkpoint",
 ]
