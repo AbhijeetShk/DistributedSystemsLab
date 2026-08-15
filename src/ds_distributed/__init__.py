@@ -1,5 +1,9 @@
 from .fsdp import wrap_model_fsdp
 from .fsdp_checkpoint import save_fsdp_checkpoint
+from .pipeline import (
+    build_pipeline_stage,
+    create_gpipe_schedule,
+)
 from .runtime import (
     DistributedContext,
     cleanup_distributed,
@@ -21,5 +25,7 @@ __all__ = [
     "ColumnParallelLinear",
     "RowParallelLinear",
     "TensorParallelMLP",
+    "build_pipeline_stage",
+    "create_gpipe_schedule",
     "save_fsdp_checkpoint",
 ]
