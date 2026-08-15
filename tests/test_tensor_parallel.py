@@ -3,6 +3,7 @@ import torch
 from ds_distributed.tensor_parallel import (
     ColumnParallelLinear,
     RowParallelLinear,
+    TensorParallelMLP,
 )
 
 
@@ -72,3 +73,18 @@ def test_row_parallel_requires_divisible_input_size():
         assert "divisible" in str(exc)
     else:
         raise AssertionError("Expected input_size divisibility validation to fail")
+
+
+def test_tensor_parallel_mlp_requires_process_group():
+    if torch.distributed.is_initialized():
+        return
+
+    try:
+        TensorParallelMLP(
+            hidden_size=32,
+            intermediate_size=64,
+        )
+    except RuntimeError as exc:
+        assert "Distributed process group" in str(exc)
+    else:
+        raise AssertionError("Expected tensor parallel MLP to require a process group")

@@ -102,3 +102,31 @@ class RowParallelLinear(nn.Module):
         )
 
         return output + self.bias
+
+
+class TensorParallelMLP(nn.Module):
+    """Transformer MLP using column- and row-parallel linear layers."""
+
+    def __init__(
+        self,
+        hidden_size: int,
+        intermediate_size: int,
+    ) -> None:
+        super().__init__()
+
+        self.up_projection = ColumnParallelLinear(
+            input_size=hidden_size,
+            output_size=intermediate_size,
+        )
+
+        self.down_projection = RowParallelLinear(
+            input_size=intermediate_size,
+            output_size=hidden_size,
+        )
+
+        self.activation = nn.GELU()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.up_projection(x)
+        x = self.activation(x)
+        return self.down_projection(x)

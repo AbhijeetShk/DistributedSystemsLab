@@ -9,6 +9,7 @@ from .runtime import (
 from .tensor_parallel import (
     ColumnParallelLinear,
     RowParallelLinear,
+    TensorParallelMLP,
 )
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "wrap_model_fsdp",
     "ColumnParallelLinear",
     "RowParallelLinear",
+    "TensorParallelMLP",
     "save_fsdp_checkpoint",
 ]
