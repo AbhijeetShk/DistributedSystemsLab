@@ -6,7 +6,10 @@ from .runtime import (
     get_distributed_context,
     initialize_distributed,
 )
-from .tensor_parallel import ColumnParallelLinear
+from .tensor_parallel import (
+    ColumnParallelLinear,
+    RowParallelLinear,
+)
 
 __all__ = [
     "DistributedContext",
@@ -15,5 +18,6 @@ __all__ = [
     "initialize_distributed",
     "wrap_model_fsdp",
     "ColumnParallelLinear",
+    "RowParallelLinear",
     "save_fsdp_checkpoint",
 ]
