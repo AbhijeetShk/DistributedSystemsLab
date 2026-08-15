@@ -1,28 +1,21 @@
 from benchmark import benchmark_steps
-
-STEP_SAMPLES = 8
-STEPS = 10
+from benchmark.config import get_config
 
 
 def main() -> None:
-    state = {"step": 0}
+    config = get_config("ddp")
 
     def step() -> int:
-        state["step"] += 1
-
-        total = 0
-
-        for value in range(100_000):
-            total += value
+        total = sum(range(100_000))
 
         assert total > 0
 
-        return STEP_SAMPLES
+        return config.batch_size
 
     result = benchmark_steps(
-        name="synthetic",
+        name=config.name,
         step_fn=step,
-        steps=STEPS,
+        steps=config.benchmark_steps,
         world_size=1,
     )
 
