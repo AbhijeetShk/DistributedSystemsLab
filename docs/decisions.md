@@ -7,13 +7,20 @@ the reasoning behind choices that would otherwise disappear as the code grows.
 
 ## Minimal Model
 
-The model is intentionally small.
+The model is intentionally small relative to the systems it is meant to
+represent.
 
-A distributed systems lab does not need a large language model to demonstrate
-distributed training mechanics. A smaller model makes process behavior,
-communication, memory, and failures easier to inspect.
+A distributed systems lab does not need a frontier-scale language model to
+demonstrate distributed training mechanics. The implementation should remain
+small enough that process behavior, communication, memory, and failures can
+be inspected directly.
 
 The model is therefore a workload, not the subject of the project.
+
+For CUDA benchmarking, the workload was deliberately scaled beyond the tiny
+development configuration until GPU compute and memory became meaningful.
+The benchmark model is still small by modern training standards, but large
+enough to expose the systems behavior being studied.
 
 ## Use Mature Distributed Primitives
 

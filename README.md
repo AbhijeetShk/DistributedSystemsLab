@@ -38,10 +38,10 @@ Distributed Runtime
            Capstone
 ```
 
-The workload is a small GPT-style decoder-only Transformer.
+The workload is a GPT-style decoder-only Transformer.
 
-It is deliberately small. The interesting object here is the execution system,
-not the model.
+It is deliberately small relative to frontier-scale training systems. The
+interesting object here is the execution system, not the model.
 
 ## Design
 
@@ -125,7 +125,7 @@ explicit.
 
 ## Performance
 
-The final comparison is intended to answer:
+The benchmark layer is designed to answer:
 
 ```text
 How much memory does each strategy save?
@@ -145,8 +145,11 @@ The benchmark harness records:
 
 The profiler provides the execution-level view.
 
-GPU results are not fabricated into the repository. They will be generated on
-a CUDA/NCCL environment and recorded with the workload and configuration used.
+The CUDA workload has been characterized on a Tesla T4 and a benchmark
+configuration has been locked. A complete multi-GPU comparison is not reported
+because the available CUDA environment contains one physical GPU.
+
+No predicted scaling numbers are substituted for measurements.
 
 ## Documentation
 

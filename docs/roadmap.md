@@ -6,7 +6,7 @@ different ways of partitioning data, model state, computation, and execution.
 
 ## Completed
 
-The core path is complete.
+The core implementation path is complete.
 
 ```text
 Single GPU
@@ -35,20 +35,21 @@ DDP changes data ownership, FSDP and ZeRO change state ownership, tensor
 parallelism changes how individual operations execute, and pipeline
 parallelism changes how the model's computation is scheduled.
 
-## Final Validation
+## Validation
 
-The remaining benchmark work is experimental rather than architectural. The
-completed implementations need to be run under a CUDA/NCCL environment using
-the common benchmark configuration.
+The implementation has been validated locally through unit tests and
+multi-process Gloo experiments.
 
-The comparison should measure throughput, step time, peak memory, and scaling
-behavior across DDP, FSDP, ZeRO, tensor parallelism, and pipeline parallelism.
-The profiler should then be used to explain the differences rather than simply
-report them.
+The CUDA path was then exercised on a Tesla T4. Profiling and workload sweeps
+were used to identify a regime where model compute and memory became
+substantial rather than dominated by framework overhead.
 
-The important result is not which strategy "wins". It is understanding why the
-result changes with model size, batch size, device count, and communication
-pattern.
+A roughly 303M-parameter model with batch size 4 and sequence length 512 is now
+the locked workload for future multi-GPU measurements.
+
+A complete multi-GPU comparison is not included because the available CUDA
+environment contains one physical GPU. Simulating additional ranks on that
+device would measure contention rather than distributed scaling.
 
 ## What Comes Next
 
@@ -63,8 +64,8 @@ overlap, activation checkpointing under sharding, sequence parallelism,
 mixture-of-experts and expert parallelism, distributed inference, continuous
 batching, fault tolerance, and multi-node scaling.
 
-None of these are committed features yet. They become worth implementing when
-the existing experiments give a reason to investigate them.
+None of these are committed features. They become worth implementing when the
+existing experiments give a reason to investigate them.
 
 ## Frontier
 
@@ -73,10 +74,10 @@ patterns toward understanding the systems problems appearing in frontier AI
 infrastructure.
 
 That means looking beyond individual techniques and asking how memory,
-communication, scheduling, model architecture, and hardware interact when the
-scale changes.
+communication, scheduling, model architecture, and hardware interact when
+the scale changes.
 
 The roadmap should therefore remain deliberately incomplete.
 
-A useful system should change its roadmap when the experiments reveal something
-unexpected.
+A useful system should change its roadmap when the experiments reveal
+something unexpected.

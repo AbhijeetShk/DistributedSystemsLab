@@ -27,140 +27,132 @@ elapsed time / measured steps
 The profiler provides a second view of the same execution. Instead of asking
 how fast the complete step was, it helps explain where that time went.
 
-## Common Workload
+## Workload Selection
 
-The final benchmark configuration currently uses the same basic workload
-definition across strategies:
-
-```text
-batch size       = 8
-sequence length  = 32
-warmup steps     = 5
-benchmark steps  = 20
-```
-
-The model configuration is kept fixed while comparing parallelism strategies.
-
-The exact hardware, software versions, world size, and launch configuration
-should be recorded with the final results.
-
-## Warmup
-
-Initial iterations are not included in the measured interval.
-
-This avoids treating startup effects, lazy initialization, memory allocation,
-and other one-time costs as steady-state training performance.
-
-The benchmark therefore follows:
+The first CUDA workload was intentionally small:
 
 ```text
-initialization
-      ↓
-warmup
-      ↓
-measurement
+hidden size     = 128
+layers          = 2
+heads           = 4
+batch size      = 8
+sequence length = 32
 ```
 
-## Metrics
+It was useful for validating the CUDA path, but profiling showed that the
+workload was dominated by CPU-side framework overhead and kernel launches.
+The GPU execution time was only a small fraction of the measured CPU time.
 
-### Throughput
+The workload was therefore increased progressively rather than chosen
+arbitrarily.
 
-The primary throughput metric is samples per second:
+The resulting model-size sweep was:
 
 ```text
-samples / elapsed seconds
+85.5M parameters    2.16 GB peak memory
+302.9M parameters   6.49 GB peak memory
+473.0M parameters   9.29 GB peak memory
 ```
 
-For the language-model workload, token throughput is:
+The 302.9M-parameter configuration was selected as the working benchmark
+configuration. It provides substantial compute and memory pressure on the
+available T4 while leaving enough headroom for the rest of the system.
+
+## Locked Workload
 
 ```text
-samples / second × sequence length
+hidden size     = 1024
+layers          = 24
+attention heads = 16
+parameters      ≈ 303M
+
+batch size      = 4
+sequence length = 512
+
+warmup steps    = 5
+benchmark steps = 20
 ```
 
-Higher throughput is better, but only within the same workload and hardware
-configuration.
+The workload is fixed before comparing execution strategies. It should not be
+changed to make an individual strategy look better.
 
-### Step Time
+## CUDA Environment
 
-Average time per measured training step.
-
-Lower is better.
-
-This is particularly useful when comparing communication-heavy strategies,
-because a higher throughput number alone does not explain where the time is
-being spent.
-
-### Peak Memory
-
-Peak CUDA memory allocated during the measured execution.
-
-Memory is one of the main reasons to move beyond DDP, so this metric is as
-important as throughput.
-
-A strategy that uses less memory but introduces substantial communication may
-still be the better choice when the alternative cannot fit the workload.
-
-### Scaling
-
-When multiple world sizes are available, scaling should be measured rather
-than assumed.
-
-A simple throughput scaling comparison is:
+The CUDA experiments were run on:
 
 ```text
-distributed throughput / single-device throughput
+GPU       = NVIDIA Tesla T4
+Memory    = 14.6 GB
+PyTorch   = 2.11.0+cu128
+CUDA      = 12.8
+GPUs      = 1
 ```
 
-Ideal scaling would increase proportionally with the number of devices.
+The local development environment uses macOS and Gloo for distributed
+correctness experiments. Those runs validate process groups, collectives,
+synchronization, and distributed data handling, but are not treated as GPU
+performance measurements.
 
-The gap between ideal and observed scaling is where communication,
-synchronization, imbalance, and other overheads become visible.
+## T4 Measurements
+
+The workload exploration produced:
+
+| Model | Parameters | Batch | Sequence | Step Time | Tokens/s | Peak Memory |
+|---|---:|---:|---:|---:|---:|---:|
+| Small | 3.3M | 4 | 256 | 16.05 ms | — | 0.13 GB |
+| Medium | 25.4M | 4 | 256 | 63.13 ms | — | 0.59 GB |
+| 85M | 85.5M | 4 | 512 | 412.5 ms | 4,965 | 2.16 GB |
+| 303M | 302.9M | 4 | 512 | 1,409.7 ms | 1,453 | 6.49 GB |
+| 473M | 473.0M | 4 | 512 | 2,009.6 ms | 1,019 | 9.29 GB |
+
+These measurements were used to select the benchmark workload rather than to
+rank distributed strategies.
+
+The 303M configuration is the locked workload for future multi-GPU runs.
 
 ## Profiling
 
-The profiler is not intended to replace the benchmark.
+The profiler was used to understand why the original small workload was
+unsuitable.
 
-The benchmark tells us that something changed.
-
-The profiler helps answer why.
-
-For example, a lower throughput result might come from:
+For the 128-hidden, two-layer model:
 
 ```text
-more collective communication
-synchronization stalls
-memory movement
-pipeline bubbles
-load imbalance
+Self CPU time     = 230.985 ms
+Self CUDA time    =   5.606 ms
 ```
 
-The DDP profiling experiment exports a trace that can be inspected at the
-operator and execution level.
+A large amount of CPU-side time was associated with kernel launches and
+runtime module loading.
 
-## Environment
+The useful observation is not the absolute number. It is that the workload
+was operating in the wrong execution regime for studying distributed
+performance.
 
-The final performance measurements should be collected on Linux with CUDA and
-NCCL.
+A distributed strategy cannot compensate for a workload whose dominant cost
+is framework and launch overhead.
 
-The local macOS/Gloo experiments are useful for validating distributed
-correctness and process behavior, but they are not used as GPU performance
-evidence.
+## Distributed Results
 
-The final result should record at least:
+A complete multi-GPU performance comparison was not performed.
+
+The available CUDA environment contained one physical GPU. Launching multiple
+distributed processes on the same T4 would measure contention rather than
+multi-GPU scaling, so those numbers would not represent the behavior this lab
+is intended to study.
+
+The following strategies are implemented and have correctness coverage:
 
 ```text
-GPU model
-number of GPUs
-PyTorch version
-CUDA version
-NCCL version
-world size
-batch size
-sequence length
-model configuration
+DDP
+FSDP
+ZeRO / DeepSpeed
+Tensor Parallelism
+Pipeline Parallelism
 ```
 
-Without this information, the numbers are difficult to reproduce or interpret.
+Their multi-GPU performance remains an open experiment rather than an
+unmeasured claim.
 
 ## Final Comparison
 
@@ -175,19 +167,17 @@ The intended comparison is:
 | Tensor Parallel | — | — | — | — |
 | Pipeline Parallel | — | — | — | — |
 
-These values are intentionally left empty until the CUDA/NCCL experiments are
-run.
-
-The point of the benchmark is to discover the tradeoffs, not to manufacture a
-ranking beforehand.
+The table is intentionally empty. The required multi-GPU hardware was not
+available, and no predicted results are substituted for measurements.
 
 ## Questions
 
-The final experiment should leave us with more than a table.
+The eventual multi-GPU experiment should answer more than which strategy is
+fastest.
 
 The useful questions are whether memory savings justify additional
 communication, when DDP stops scaling efficiently, where tensor parallelism
 starts paying for its collectives, how pipeline bubbles affect utilization,
-and whether the different strategies behave differently as the workload grows.
+and how those tradeoffs change as the workload grows.
 
-If the measurements answer those questions, the benchmark has done its job.
+The benchmark is successful if it makes those tradeoffs visible.
